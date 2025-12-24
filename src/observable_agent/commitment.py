@@ -17,7 +17,16 @@ class Commitment:
     on_violation: Callable[[VerificationResult], None] | None = None
 
     def verify(self, execution: Execution, observer: DatadogObservability | None = None) -> VerificationResult:
-        if not self.verifier and random.random() > self.semantic_sampling_rate:
+        sampled_in = random.random() <= self.semantic_sampling_rate
+
+        if self.verifier:
+            intermediate_result = self.verifier(execution, self.terms)
+            deterministic_passed = intermediate_result.status == VerificationResultStatus.PASS
+            if deterministic_passed and sampled_in:
+                intermediate_result = semantic_verifier(execution, self.terms)
+        elif sampled_in:
+            intermediate_result = semantic_verifier(execution, self.terms)
+        else:
             return VerificationResult(
                 status=VerificationResultStatus.SKIPPED,
                 commitment_name=self.name,
@@ -25,13 +34,6 @@ class Commitment:
                 expected="N/A",
                 context={}
             )
-
-        if not self.verifier:
-            verifier = semantic_verifier
-        else:
-            verifier = self.verifier
-
-        intermediate_result = verifier(execution, self.terms)
 
         if observer:
             observer.submit_evaluation(
