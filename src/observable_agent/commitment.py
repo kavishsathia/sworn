@@ -20,7 +20,16 @@ class Commitment:
         sampled_in = random.random() <= self.semantic_sampling_rate
 
         if self.verifier:
-            intermediate_result = self.verifier(execution, self.terms)
+            try:
+                intermediate_result = self.verifier(execution, self.terms)
+            except Exception as e:
+                return VerificationResult(
+                    status=VerificationResultStatus.VERIFICATION_ERROR,
+                    commitment_name=self.name,
+                    actual=f"Verifier raised an exception: {str(e)}",
+                    expected=self.terms,
+                    context={}
+                )
             deterministic_passed = intermediate_result.status == VerificationResultStatus.PASS
             if deterministic_passed and sampled_in:
                 intermediate_result = semantic_verifier(execution, self.terms)

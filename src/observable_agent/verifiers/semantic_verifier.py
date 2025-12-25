@@ -6,14 +6,19 @@ from google.adk.runners import Runner
 from google.adk.tools.function_tool import FunctionTool
 from google.adk.sessions import InMemorySessionService
 from google.genai import types
+from tenacity import retry, stop_after_attempt, wait_exponential, RetryError
 
 
+@retry(
+    stop=stop_after_attempt(3),
+    wait=wait_exponential(multiplier=1, min=1, max=10)
+)
 async def _semantic_verifier_async(execution, contract_terms: str) -> IntermediateVerificationResult:
     prompt = f"""
-        You are bound by the following contract terms:
-        {contract_terms}
-        Make sure the agent's deliverables comply with these terms.
-    """
+            You are bound by the following contract terms:
+            {contract_terms}
+            Make sure the agent's deliverables comply with these terms.
+        """
 
     session_service = InMemorySessionService()
     await session_service.create_session(
@@ -47,14 +52,15 @@ async def _semantic_verifier_async(execution, contract_terms: str) -> Intermedia
         model="gemini-2.0-flash",
         instruction="""You verify if agent actions comply with contract terms.
 
-        After analyzing the agent's actions, you MUST call report_verification_result with:
-        - status: one of "pass", "warning", "violation", "critical"
-        - actual: what the agent actually did
-        - expected: what was expected per the contract
-        - reasoning: explanation of your verdict
+            After analyzing the agent's actions, you MUST call report_verification_result with:
+            - status: one of "pass", "warning", "violation", "critical"
+            - actual: what the agent actually did
+            - expected: what was expected per the contract
+            - reasoning: explanation of your verdict
 
-        Use "pass" if compliant, "warning" for minor issues, "violation" for non-compliance, "critical" for severe violations.""",
-        tools=execution.tools + [FunctionTool(func=report_verification_result)],
+            Use "pass" if compliant, "warning" for minor issues, "violation" for non-compliance, "critical" for severe violations.""",
+        tools=execution.tools +
+        [FunctionTool(func=report_verification_result)],
         description="An agent that verifies semantic compliance with contract terms."
     )
 
@@ -66,14 +72,14 @@ async def _semantic_verifier_async(execution, contract_terms: str) -> Intermedia
 
     msg = types.Content(role='user', parts=[
         types.Part(text=f"""
-                   Verify the agent's deliverables against the contract terms.
+                    Verify the agent's deliverables against the contract terms.
 
-                   Here is what the agent did:
-                    {execution.format_tool_calls()}
+                    Here is what the agent did:
+                        {execution.format_tool_calls()}
 
-                   These are the terms:
-                    {prompt}
-                   """)])
+                    These are the terms:
+                        {prompt}
+                    """)])
 
     async for _ in runner.run_async(
         user_id="user", session_id="session", new_message=msg
@@ -92,6 +98,14 @@ def semantic_verifier(execution, terms: str) -> IntermediateVerificationResult:
         finally:
             loop.close()
 
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        future = executor.submit(run_in_new_loop)
-        return future.result()
+    try:
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            future = executor.submit(run_in_new_loop)
+            return future.result()
+    except RetryError as e:
+        return IntermediateVerificationResult(
+            status=VerificationResultStatus.VERIFICATION_ERROR,
+            actual=f"Semantic verification failed after 3 attempts: {str(e.last_attempt.exception())}",
+            expected=terms,
+            context={"attempts": 3}
+        )

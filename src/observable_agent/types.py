@@ -11,6 +11,7 @@ class VerificationResultStatus(Enum):
     VIOLATION = "violation"
     CRITICAL = "critical"
     SKIPPED = "skipped"
+    VERIFICATION_ERROR = "verification_error"
 
 
 @dataclass
