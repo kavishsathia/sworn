@@ -23,29 +23,37 @@ Its primary function is to produce a contract with a set of commitments before t
 ## Quick Start
 
 ```python
-from observable_agent import ObservableAgent, Contract, Commitment
+from observable_agent import Contract, Commitment, DatadogObservability
 
-# Define what the agent must do
-contract = Contract(commitments=[
-    Commitment(
-        name="no_harmful_content",
-        terms="The agent must not produce harmful or offensive content"
-    ),
-    Commitment(
-        name="stay_on_topic",
-        terms="The agent must only discuss topics related to the user's query"
-    )
-])
-
-# Create the agent (wraps Google ADK)
-agent = ObservableAgent(
-    name="my_agent",
-    model="gemini-2.0-flash",
-    instruction="You are a helpful assistant.",
-    description="A helpful assistant",
-    contract=contract,
-    on_implementation_complete=lambda verifier: print(verifier.verify())
+# Define the contract with commitments
+observer = DatadogObservability()
+contract = Contract(
+    observer=observer,
+    commitments=[
+        Commitment(
+            name="no_harmful_content",
+            terms="The agent must not produce harmful or offensive content"
+        ),
+        Commitment(
+            name="stay_on_topic",
+            terms="The agent must only discuss topics related to the user's query"
+        )
+    ]
 )
+
+# Decorate your tools
+@contract.actuator
+def send_message(content: str) -> dict:
+    return {"status": "sent", "content": content}
+
+# Run within an execution context
+with contract.execution() as execution:
+    # Run your agent (any framework)...
+    send_message("Hello, world!")
+
+    # Verify the execution
+    results = execution.verify()
+    print(results)
 ```
 
 ## Progressive Hardening
@@ -56,22 +64,27 @@ Using this library is very much a process of continuous exploration, you observe
 
 ```mermaid
 classDiagram
-    ObservableAgent --> Contract
-    ObservableAgent --> Execution
     Contract --> Commitment
+    Contract --> Observer
+    Contract ..> Execution : creates
+    Execution --> Contract
     Commitment --> Verifier
     Commitment --> SemanticVerifier
-
-    class ObservableAgent {
-        +name: str
-        +model: str
-        +instruction: str
-        +contract: Contract
-    }
+    Observer <|-- DatadogObservability
 
     class Contract {
         +commitments: List~Commitment~
-        +verify(execution) List~VerificationResult~
+        +observer: Observer
+        +execution() Execution
+        +actuator(func) Callable
+        +sensor(func) Callable
+    }
+
+    class Execution {
+        +tool_calls: List~ToolCall~
+        +verify() List~VerificationResult~
+        +add_tool_call(ToolCall)
+        +format_tool_calls() str
     }
 
     class Commitment {
@@ -79,22 +92,25 @@ classDiagram
         +terms: str
         +verifier: Callable
         +semantic_sampling_rate: float
-        +verify(execution) VerificationResult
     }
 
-    class Execution {
-        +tool_calls: List~ToolCall~
-        +format_tool_calls() str
+    class Observer {
+        <<interface>>
+        +capture_span()
+        +submit_evaluation()
+    }
+
+    class DatadogObservability {
+        +capture_span()
+        +submit_evaluation()
     }
 
     class Verifier {
         <<deterministic>>
-        +verify(execution, terms) Result
     }
 
     class SemanticVerifier {
         <<LLM-based>>
-        +verify(execution, terms) Result
     }
 ```
 
