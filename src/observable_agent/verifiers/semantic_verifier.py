@@ -40,7 +40,7 @@ async def _semantic_verifier_async(execution, contract_terms: str) -> Intermedia
             status: str,
             actual: str,
             expected: str,
-            reasoning: list[str] | None = None
+            reasoning: str = ""
     ):
         """Report the verification result."""
         result.status = VerificationResultStatus(status)
@@ -61,8 +61,7 @@ async def _semantic_verifier_async(execution, contract_terms: str) -> Intermedia
             - reasoning: explanation of your verdict
 
             Use "pass" if compliant, "warning" for minor issues, "violation" for non-compliance, "critical" for severe violations.""",
-        tools=execution.tools +
-        [FunctionTool(func=report_verification_result)],
+        tools=[FunctionTool(func=report_verification_result)],
         description="An agent that verifies semantic compliance with contract terms."
     )
 

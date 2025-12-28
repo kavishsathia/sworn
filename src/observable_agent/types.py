@@ -1,8 +1,7 @@
-from typing import Any, Dict
+from typing import Any, Dict, Literal
 from enum import Enum
 from dataclasses import dataclass
-from google.adk.tools.tool_context import ToolContext
-from google.adk.tools.base_tool import BaseTool
+from datetime import datetime
 
 
 class VerificationResultStatus(Enum):
@@ -35,9 +34,19 @@ class IntermediateVerificationResult:
 
 
 @dataclass
+class ToolContext:
+    """Contextual information about a tool call."""
+    started_at: datetime
+    ended_at: datetime
+    duration_ms: float
+
+
+@dataclass
 class ToolCall:
     """Represents a tool call made by the agent."""
-    tool: BaseTool
+    tool_name: str
+    function: Literal["sensor", "actuator"]
     args: Dict[str, Any]
     tool_context: ToolContext
-    tool_response: Dict
+    tool_response: Any
+    error: Exception | None

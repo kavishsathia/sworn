@@ -52,7 +52,7 @@ class TestContractVerify:
             semantic_sampling_rate=0
         )
         contract = Contract(commitments=[commitmentA, commitmentB])
-        results = contract.verify(mock_execution)
+        results = contract._verify(mock_execution)
         assert all(result.status ==
                    VerificationResultStatus.PASS for result in results)
 
@@ -67,7 +67,7 @@ class TestContractVerify:
         )
 
         contract = Contract(commitments=[commitment])
-        results = contract.verify(mock_execution)
+        results = contract._verify(mock_execution)
         assert results[0].status == VerificationResultStatus.VIOLATION
         on_violation.assert_called_once()
 
@@ -83,7 +83,7 @@ class TestContractVerify:
 
         contract = Contract(
             commitments=[commitment], on_violation=on_violation)
-        results = contract.verify(mock_execution)
+        results = contract._verify(mock_execution)
         assert results[0].status == VerificationResultStatus.VIOLATION
         on_violation.assert_called_once()
 
@@ -98,6 +98,6 @@ class TestContractVerify:
 
         contract = Contract(
             commitments=[commitment], on_violation=on_violation)
-        results = contract.verify(mock_execution)
+        results = contract._verify(mock_execution)
         assert results[0].status == VerificationResultStatus.VIOLATION
         on_violation.assert_called_once()

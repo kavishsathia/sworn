@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from typing import Callable
-from observable_agent.observability.datadog import DatadogObservability
+from observable_agent.observability.observer import Observer
 from observable_agent.types import IntermediateVerificationResult, VerificationResult, VerificationResultStatus
 from observable_agent.execution import Execution
 from observable_agent.verifiers.semantic_verifier import semantic_verifier
@@ -17,7 +17,7 @@ class Commitment:
     semantic_sampling_rate: float = 1.0
     on_violation: Callable[[VerificationResult], None] | None = None
 
-    def verify(self, execution: Execution, observer: DatadogObservability | None = None) -> VerificationResult:
+    def verify(self, execution: Execution, observer: Observer | None = None) -> VerificationResult:
         """
             Verifies the execution against the commitment terms and takes into account the sampling rate.
             If a deterministic verifier is provided, it is called first. If it passes and the sampling checks in,

@@ -1,18 +1,13 @@
 from ddtrace.llmobs import LLMObs
+from observable_agent.observability.observer import Observer
 
 
-class DatadogObservability:
+class DatadogObservability(Observer):
     """Datadog observability integration for capturing spans and submitting evaluations."""
 
     def __init__(self):
         self._span_context = None
-
-    def __enter__(self):
         LLMObs.enable()
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        LLMObs.flush()
 
     def capture_span(self) -> None:
         """Captures a new span context for evaluations."""
