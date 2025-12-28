@@ -31,6 +31,10 @@ class Execution:
         """Verify this execution against its contract's commitments."""
         return self._contract._verify(self, observer)
 
+    def add_tool_call(self, tool_call: ToolCall) -> None:
+        """Manually add a tool call to this execution."""
+        self.tool_calls.append(tool_call)
+
     def format_tool_calls(self) -> str:
         """Formats the tool calls for logging or display purposes."""
         return "\n".join([
