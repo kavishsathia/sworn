@@ -84,7 +84,7 @@ classDiagram
         +tool_calls: List~ToolCall~
         +verify() List~VerificationResult~
         +add_tool_call(ToolCall)
-        +format_tool_calls() str
+        +format() str
     }
 
     class Commitment {

@@ -72,7 +72,7 @@ async def main():
             if hasattr(event, 'content') and event.content:
                 print(f"Agent: {event.content}")
 
-        print(execution.format_tool_calls())
+        print(execution.format())
         results = execution.verify()
         print(f"Verification results: {results}")
 

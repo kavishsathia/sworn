@@ -76,7 +76,7 @@ async def _semantic_verifier_async(execution, contract_terms: str) -> Intermedia
                     Verify the agent's deliverables against the contract terms.
 
                     Here is what the agent did:
-                        {execution.format_tool_calls()}
+                        {execution.format()}
 
                     These are the terms:
                         {prompt}

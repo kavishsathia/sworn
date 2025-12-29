@@ -8,7 +8,7 @@ from sworn.types import VerificationResultStatus, IntermediateVerificationResult
 def mock_execution():
     """Create a fake execution."""
     execution = Mock()
-    execution.format_tool_calls.return_value = "tool1(arg1) -> result1"
+    execution.format.return_value = "tool1(arg1) -> result1"
     return execution
 
 

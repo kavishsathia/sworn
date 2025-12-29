@@ -15,6 +15,7 @@ _context_execution: ContextVar["Execution"] = ContextVar("execution")
 class Execution:
     _contract: "Contract"
     tool_calls: list[ToolCall] = field(default_factory=list)
+    context: list[str] = field(default_factory=list)
     _token: Token["Execution"] | None = field(default=None, init=False, repr=False)
 
     def __enter__(self) -> "Execution":
@@ -35,9 +36,15 @@ class Execution:
         """Manually add a tool call to this execution."""
         self.tool_calls.append(tool_call)
 
-    def format_tool_calls(self) -> str:
-        """Formats the tool calls for logging or display purposes."""
-        return "\n".join([
+    def add_context(self, context: str) -> None:
+        """Add context information to this execution."""
+        self.context.append(context)
+
+    def format(self) -> str:
+        """Formats the execution context and tool calls for logging or display purposes."""
+        context_str = "\n".join(self.context)
+        tool_calls_str = "\n".join([
             f"Tool: {tc.tool_name}, Args: {tc.args}, Response: {tc.tool_response}"
             for tc in self.tool_calls
         ])
+        return f"===Context===\n{context_str}\n===Execution===\n{tool_calls_str}"
